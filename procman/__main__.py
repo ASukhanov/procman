@@ -1,6 +1,6 @@
 """Tabbed GUI for starting/stopping/monitoring programs.
 """
-__version__ = 'v1.1.1 2025-07-30'# added --interactive
+__version__ = 'v2.0.2 2025-09-08'# added --rowHeight
 
 import sys, os, argparse
 from qtpy.QtWidgets import QApplication
@@ -13,20 +13,23 @@ def main():
       description=__doc__,
       formatter_class=argparse.ArgumentDefaultsHelpFormatter,
       epilog=f'Version {procman.__version__}')
-    parser.add_argument('-c', '--configDir', help=\
+    parser.add_argument('-c', '--configDir', help=
       ('Root directory of config files, one config file per program, '
       'if None, then ./config directory will be used'))
-    parser.add_argument('-C', '--condensed', action='store_true', help=\
+    parser.add_argument('-C', '--condensed', action='store_true', help=
       'Condensed arrangement of tables: no headers, narrow columns')
-    parser.add_argument('-i', '--interactive', default=False, action='store_true', help=
+    parser.add_argument('-H', '--rowHeight', type=int, default=20, help=
+      'Height of the rows')
+    parser.add_argument('-i', '--interactive', default=False,
+      action='store_true', help=
       'Select files interactively')
-    parser.add_argument('-t', '--interval', default=10., help=\
+    parser.add_argument('-t', '--interval', default=10., help=
       'Interval in seconds of periodic checking. If 0 then no checking')
-    parser.add_argument('-v', '--verbose', action='count', default=0, help=\
+    parser.add_argument('-v', '--verbose', action='count', default=0, help=
       'Show more log messages (-vv: show even more).')
-    parser.add_argument('-z', '--zoomin', help=\
+    parser.add_argument('-z', '--zoomin', help=
       'Zoom the application window by a factor, factor must be >= 1')
-    parser.add_argument('files', nargs='*', help=\
+    parser.add_argument('files', nargs='*', help=
       ('Path of config files, can include wildcards. '
        'If None, then an interactive dialog will be opened to select files.')),
     pargs = parser.parse_args()

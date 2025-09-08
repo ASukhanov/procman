@@ -1,6 +1,6 @@
 """Tabbed GUI for starting/stopping/monitoring programs.
 """
-__version__ = 'v2.0.0 2025-09-07'# Adopted from manman
+__version__ = 'v2.0.2 2025-09-07'# Font sizes adjusted to --rowHeight
 #TODO: xdg_open does not launch if other editors not running. 
 
 import sys, os, time, subprocess, argparse, threading, glob
@@ -17,9 +17,7 @@ ManCmds =       ['Check',    'Start',    'Stop',     'Command']
 AllManCmds = ['Check All','Start All','Stop All', 'Edit', 'Delete',
                 'Condense', 'Uncondense']#, 'Exit All']
 Col = {'Applications':0, 'status':1, 'response':2}
-BoldFont = QtGui.QFont("Helvetica", 14, QtGui.QFont.Bold)
 FilePrefix = 'proc'
-MinimalRowHeight = 20
 #``````````````````Helpers````````````````````````````````````````````````````
 def select_files_interactively(directory, title=f'Select {FilePrefix}*.py files'):
     dialog = QW.QFileDialog()
@@ -80,6 +78,7 @@ def setButtonStyleSheet(parent):
             "border-style: solid;"
             "border-color: Grey;"
             "border-width: 2px;"
+            f"font-size: {Window.pargs.rowHeight-5}px;"
             "border-radius: 10px;}"
             #"font-weight: bold;"# no effect
             'QPushButton::pressed{background-color:pink;}'
@@ -140,8 +139,9 @@ class MyTable(QW.QTableWidget):
         self.configFile = folder+'/'+fname
         self.setColumnCount(len(Col))
         self.setHorizontalHeaderLabels(Col.keys())
-        self.verticalHeader().setMinimumSectionSize(MinimalRowHeight)
+        self.verticalHeader().setMinimumSectionSize(Window.pargs.rowHeight)
         self.manRow = {}
+        self.setFont(QtGui.QFont('Arial', Window.pargs.rowHeight-8))
         setButtonStyleSheet(self)
 
         try:    title = module.title
@@ -166,7 +166,7 @@ class MyTable(QW.QTableWidget):
             try:    item.setToolTip(props['help'])
             except: pass
             self.setCellWidget(rowPosition, Col['Applications'], item)
-
+            
             self.setItem(rowPosition, Col['status'],
               QW.QTableWidgetItem('?'))
             self.setItem(rowPosition, Col['response'],
@@ -209,6 +209,7 @@ class MyTable(QW.QTableWidget):
             H.printv(f'starting {manName}')
             item = self.item(rowPosition, Col['status'])
             item.setText('starting...')
+            item.setBackground(QtGui.QColor('lightYellow'))
             path = startup[manName].get('cd')
             H.printi('Executing commands:')
             if path:
