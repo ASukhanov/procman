@@ -26,8 +26,8 @@ startup = {
 # liteServer-based
 'peakSimulator':{help:
   'Lite server, simulating peaks and noise',
-  cmd:		'python3 -m liteserver.device.litePeakSimulator -ilo -p9701',
-  process:	'liteserver.device.litePeakSimulator -ilo -p9701',
+  cmd:		'python3 -m liteserver.device.litePeakSimulator -i localhost -p9701',
+  process:	'litePeakSimulator -i localhost -p9701',
   },
 'plot it':{help:
   'Plotting tool for peakSimulator',

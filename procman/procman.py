@@ -1,6 +1,6 @@
 """Tabbed GUI for starting/stopping/monitoring programs.
 """
-__version__ = 'v2.0.5 2025-09-08'# Status is started/stopped for better fit
+__version__ = 'v2.0.5 2025-09-08'# Smaller font for response column
 #TODO: xdg_open does not launch if other editors not running. 
 
 import sys, os, time, subprocess, argparse, threading, glob
@@ -115,7 +115,6 @@ class myDialog(QW.QDialog):
         for btnTxt in buttons:
             btn = myPushButton(btnTxt, title)
             btn.clicked.connect(self.accept)
-            #self.buttonBox.addButton(btn)
             layout.addWidget(btn)
         self.setLayout(layout)
         
@@ -139,7 +138,8 @@ class MyTable(QW.QTableWidget):
         self.setHorizontalHeaderLabels(Col.keys())
         self.verticalHeader().setMinimumSectionSize(Window.pargs.rowHeight)
         self.manRow = {}
-        self.setFont(QtGui.QFont('Arial', Window.pargs.rowHeight-10))
+        fontButton = QtGui.QFont('Arial', Window.pargs.rowHeight-10)
+        self.setFont(fontButton)
         setButtonStyleSheet(self)
 
         try:    title = module.title
@@ -158,16 +158,15 @@ class MyTable(QW.QTableWidget):
             rowPosition = self.rowCount()
             self._insertRow(rowPosition)
             self.manRow[manName] = rowPosition
-
-            item = myPushButton(manName, manName, buttons=ManCmds)
-            try:    item.setToolTip(props['help'])
+            button = myPushButton(manName, manName, buttons=ManCmds)
+            try:    button.setToolTip(props['help'])
             except: pass
-            self.setCellWidget(rowPosition, Col['Applications'], item)
-            
-            self.setItem(rowPosition, Col['_status_'],
-              QW.QTableWidgetItem('?'))
-            self.setItem(rowPosition, Col['response'],
-              QW.QTableWidgetItem(''))
+            self.setCellWidget(rowPosition, Col['Applications'], button)
+            itemStatus = QW.QTableWidgetItem('?')
+            self.setItem(rowPosition, Col['_status_'], itemStatus)
+            itemResponse = QW.QTableWidgetItem('')
+            itemResponse.setFont(QtGui.QFont('Arial',10))
+            self.setItem(rowPosition, Col['response'], itemResponse)
 
         # Set up headers
         self.resizeColumnsToContents()
@@ -289,7 +288,7 @@ class MyTable(QW.QTableWidget):
         #print(f'deferred: {args}')
         manName,rowPosition = args
         self.manAction(manName, ManCmds.index('Check'))
-        if 'start' not in self.item(rowPosition, Col['_status_']).text():
+        if 'started' not in self.item(rowPosition, Col['_status_']).text():
             self.item(rowPosition, Col['response']).setText('Failed to start')
 #``````````````````Main Window````````````````````````````````````````````````
 class Window(QW.QMainWindow):# it may sense to subclass it from QW.QMainWindow
@@ -326,7 +325,7 @@ class Window(QW.QMainWindow):# it may sense to subclass it from QW.QMainWindow
         ctable = current_mytable()
         w = [ctable.columnWidth(i) for i in range(2)]
         h = ctable.rowCount() * Window.pargs.rowHeight + 80
-        self.resize(sum(w)+20, h)
+        self.resize(sum(w)+40, h)
 
         # Update tables and set up periodic check
         periodicCheck()
