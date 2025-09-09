@@ -1,6 +1,6 @@
 """Tabbed GUI for starting/stopping/monitoring programs.
 """
-__version__ = 'v2.0.3 2025-09-08'# Compatibility with python 3.9. Windows size adjusted to first table.
+__version__ = 'v2.0.5 2025-09-08'# Status is started/stopped for better fit
 #TODO: xdg_open does not launch if other editors not running. 
 
 import sys, os, time, subprocess, argparse, threading, glob
@@ -16,7 +16,7 @@ from . import detachable_tabs
 ManCmds =       ['Check',    'Start',    'Stop',     'Command']
 AllManCmds = ['Check All','Start All','Stop All', 'Edit', 'Delete',
                 'Condense', 'Uncondense']#, 'Exit All']
-Col = {'Applications':0, 'status':1, 'response':2}
+Col = {'Applications':0, '_status_':1, 'response':2}
 FilePrefix = 'proc'
 #``````````````````Helpers````````````````````````````````````````````````````
 def select_files_interactively(directory, title=f'Select {FilePrefix}*.py files'):
@@ -164,7 +164,7 @@ class MyTable(QW.QTableWidget):
             except: pass
             self.setCellWidget(rowPosition, Col['Applications'], item)
             
-            self.setItem(rowPosition, Col['status'],
+            self.setItem(rowPosition, Col['_status_'],
               QW.QTableWidgetItem('?'))
             self.setItem(rowPosition, Col['response'],
               QW.QTableWidgetItem(''))
@@ -191,8 +191,8 @@ class MyTable(QW.QTableWidget):
 
         if cmd == 'Check':
             H.printvv(f'checking process {process} ')
-            status = ['not running','is started'][is_process_running(process)]
-            item = self.item(rowPosition,Col['status'])
+            status = ['stopped','started'][is_process_running(process)]
+            item = self.item(rowPosition,Col['_status_'])
             color = 'lightGreen' if 'started' in status else 'pink'
             item.setBackground(QtGui.QColor(color))
             item.setText(status)
@@ -205,7 +205,7 @@ class MyTable(QW.QTableWidget):
                 self.item(rowPosition, Col['response']).setText(txt)
                 return
             H.printv(f'starting {manName}')
-            item = self.item(rowPosition, Col['status'])
+            item = self.item(rowPosition, Col['_status_'])
             item.setText('starting...')
             item.setBackground(QtGui.QColor('lightYellow'))
             path = startup[manName].get('cd')
@@ -289,7 +289,7 @@ class MyTable(QW.QTableWidget):
         #print(f'deferred: {args}')
         manName,rowPosition = args
         self.manAction(manName, ManCmds.index('Check'))
-        if 'start' not in self.item(rowPosition, Col['status']).text():
+        if 'start' not in self.item(rowPosition, Col['_status_']).text():
             self.item(rowPosition, Col['response']).setText('Failed to start')
 #``````````````````Main Window````````````````````````````````````````````````
 class Window(QW.QMainWindow):# it may sense to subclass it from QW.QMainWindow
