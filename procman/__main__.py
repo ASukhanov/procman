@@ -34,7 +34,7 @@ def main():
        'If None, then an interactive dialog will be opened to select files.')),
     pargs = parser.parse_args()
     helpers.Verbose = pargs.verbose
-    if pargs.configDir is None and len(pargs.filess) == 0:
+    if pargs.configDir is None and len(pargs.files) == 0:
         pargs.configDir = 'config'
     procman.Window.pargs = pargs# transfer pargs to procman module
 

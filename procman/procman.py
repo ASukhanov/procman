@@ -1,6 +1,6 @@
 """Tabbed GUI for starting/stopping/monitoring programs.
 """
-__version__ = 'v2.0.2 2025-09-07'# Font sizes adjusted to --rowHeight
+__version__ = 'v2.0.3 2025-09-08'# Compatibility with python 3.9. Windows size adjusted to first table.
 #TODO: xdg_open does not launch if other editors not running. 
 
 import sys, os, time, subprocess, argparse, threading, glob
@@ -31,7 +31,7 @@ def create_folderMap():
     #print(f'c,a: {Window.pargs.configDir, Window.pargs.files}')
     folders = {}
     if Window.pargs.configDir is None:
-        files = [os.path.abspath(i) for i in Window.pargs.filess]
+        files = [os.path.abspath(i) for i in Window.pargs.files]
     else:
         absfolder = os.path.abspath(Window.pargs.configDir)
         if Window.pargs.interactive:
@@ -40,9 +40,7 @@ def create_folderMap():
             else:
                 files = [absfolder+'/'+i for i in Window.pargs.files]
         else:
-            s = f'{absfolder}/*)'
-            l = glob.glob('proc*.py', root_dir=absfolder)
-            files = [absfolder+'/'+i for i in l]
+            files = glob.glob(f'{absfolder}/proc*.py')
     for f in files:
         folder,tail = os.path.split(f)
         if not (tail.startswith(FilePrefix) and tail.endswith('.py')):
@@ -141,14 +139,13 @@ class MyTable(QW.QTableWidget):
         self.setHorizontalHeaderLabels(Col.keys())
         self.verticalHeader().setMinimumSectionSize(Window.pargs.rowHeight)
         self.manRow = {}
-        self.setFont(QtGui.QFont('Arial', Window.pargs.rowHeight-8))
+        self.setFont(QtGui.QFont('Arial', Window.pargs.rowHeight-10))
         setButtonStyleSheet(self)
 
         try:    title = module.title
         except: title = 'Applications'
 
         # Wide button for for tab-wide commands
-        #wideRow(self, 0, title, AllManCmds)
         rowPosition=0
         self._insertRow(rowPosition)
         self.setSpan(rowPosition,0,1,2)
@@ -173,6 +170,7 @@ class MyTable(QW.QTableWidget):
               QW.QTableWidgetItem(''))
 
         # Set up headers
+        self.resizeColumnsToContents()
         header = self.horizontalHeader()
         header.setStretchLastSection(True)
         if Window.pargs.condensed:
@@ -323,6 +321,12 @@ class Window(QW.QMainWindow):# it may sense to subclass it from QW.QMainWindow
                 Window.tableWidgets[tabName] = mytable
                 #print(f'Adding tab: {fname}')
                 Window.tabWidget.addTab(mytable, tabName)
+
+        # Adjust window width to 2 columns of the current table
+        ctable = current_mytable()
+        w = [ctable.columnWidth(i) for i in range(2)]
+        h = ctable.rowCount() * Window.pargs.rowHeight + 80
+        self.resize(sum(w)+20, h)
 
         # Update tables and set up periodic check
         periodicCheck()
