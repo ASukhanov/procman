@@ -1,6 +1,7 @@
 """Tabbed GUI for starting/stopping/monitoring programs.
 """
-__version__ = 'v2.0.5 2025-09-08'# Smaller font for response column
+__version__ = 'v2.1.0 2025-09-14'# deferred_check removed, poll() after popen
+#TODO: in the detached tab the manName points to first tab of the main window, not detached one.
 #TODO: xdg_open does not launch if other editors not running. 
 
 import sys, os, time, subprocess, argparse, threading, glob
@@ -28,19 +29,21 @@ def select_files_interactively(directory, title=f'Select {FilePrefix}*.py files'
 
 def create_folderMap():
     # create map of {folder1: [file1,...], folder2...} from pargs.files
-    #print(f'c,a: {Window.pargs.configDir, Window.pargs.files}')
     folders = {}
     if Window.pargs.configDir is None:
         files = [os.path.abspath(i) for i in Window.pargs.files]
     else:
-        absfolder = os.path.abspath(Window.pargs.configDir)
+        absfolder = os.path.abspath(Window.pargs.configDir)+'/'
         if Window.pargs.interactive:
             if len(Window.pargs.files) == 0:
                 files = select_files_interactively(absfolder)
             else:
-                files = [absfolder+'/'+i for i in Window.pargs.files]
+                files = [absfolder+i for i in Window.pargs.files]
         else:
-            files = glob.glob(f'{absfolder}/proc*.py')
+            if len(Window.pargs.files) == 0:
+                files = glob.glob(f'{absfolder}proc*.py')
+            else:
+                files = [absfolder+i for i in Window.pargs.files]
     for f in files:
         folder,tail = os.path.split(f)
         if not (tail.startswith(FilePrefix) and tail.endswith('.py')):
@@ -157,7 +160,7 @@ class MyTable(QW.QTableWidget):
         for manName,props in self.startup.items():
             rowPosition = self.rowCount()
             self._insertRow(rowPosition)
-            self.manRow[manName] = rowPosition
+            self.manRow[manName] = [rowPosition,'']# row, last command
             button = myPushButton(manName, manName, buttons=ManCmds)
             try:    button.setToolTip(props['help'])
             except: pass
@@ -181,8 +184,7 @@ class MyTable(QW.QTableWidget):
 
     def manAction(self, manName:str, cmd:str):
         # Execute action
-        #print(f'manAction: {manName, cmd}')
-        rowPosition = self.manRow[manName]
+        rowPosition,lastCommand = self.manRow[manName]
         startup = self.startup
         cmdstart = startup[manName]['cmd']
         process = startup[manName].get('process', f'{cmdstart}')
@@ -192,15 +194,17 @@ class MyTable(QW.QTableWidget):
             H.printvv(f'checking process {process} ')
             status = ['stopped','started'][is_process_running(process)]
             item = self.item(rowPosition,Col['_status_'])
-            color = 'lightGreen' if 'started' in status else 'pink'
-            item.setBackground(QtGui.QColor(color))
-            item.setText(status)
+            prevStatus = item.text()
+            if status != prevStatus:
+                if prevStatus[:4] in ['stop','star','?']:
+                    color = 'lightGreen' if 'started' in status else 'pink'
+                    item.setBackground(QtGui.QColor(color))
+                    item.setText(status)
 
         elif cmd == 'Start':
             self.item(rowPosition, Col['response']).setText('')
             if is_process_running(process):
-                txt = f'Is already running manager {manName}'
-                #print(txt)
+                txt = f'Is already running: {manName}'
                 self.item(rowPosition, Col['response']).setText(txt)
                 return
             H.printv(f'starting {manName}')
@@ -220,38 +224,48 @@ class MyTable(QW.QTableWidget):
                     return
                 print(f'cd {os.getcwd()}')
             print(cmdstart)
-            expandedCmd = os.path.expanduser(cmdstart)
-            cmdlist = expandedCmd.split()
+            cmdlist = os.path.expanduser(cmdstart)
             shell = startup[manName].get('shell',False)
+            if shell is False:
+                cmdlist = cmdlist.split()
             H.printv(f'popen: {cmdlist}, shell:{shell}')
             try:
-                proc = subprocess.Popen(cmdlist, shell=shell, #close_fds=True,# env=my_env,
+                process = subprocess.Popen(cmdlist, shell=shell, #close_fds=True,# env=my_env,
                   stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+                time.sleep(0.1)
+                if process.poll() is not None:
+                    #print('process did not start in 0.1s')
+                    item.setText('failed')
+                    txt = f'Failed to execute {cmdstart}'
+                    self.item(rowPosition, Col['response']).setText(txt)
+                    return
             except Exception as e:
                 H.printv(f'Exception: {e}') 
                 self.item(rowPosition, Col['response']).setText(str(e))
                 return
-            Window.timer.singleShot(int(Window.pargs.interval*1000),
-                partial(self.deferredCheck,(manName,rowPosition)))
 
         elif cmd == 'Stop':
+            status = self.item(rowPosition, Col['_status_']).text()
+            if status != 'started':
+                self.item(rowPosition, Col['response']).setText('not running')
+                return
             self.item(rowPosition, Col['response']).setText('')
             H.printv(f'stopping {manName}')
-            cmd = f'pkill -f "{process}"'
-            H.printi(f'Executing:\n{cmd}')
-            os.system(cmd)
+            cmdString = f'pkill -f "{process}"'
+            H.printi(f'Executing:\n{cmdString}')
+            os.system(cmdString)
             time.sleep(0.1)
             self.manAction(manName, ManCmds.index('Check'))
 
         elif cmd == 'Command':
             try:
                 cd = startup[manName]['cd']
-                cmd = f'cd {cd}; {cmdstart}'
+                cmdString = f'cd {cd}; {cmdstart}'
             except Exception as e:
-                cmd = cmdstart
-            #print(f'Command in row {rowPosition}:\n{cmd}')
-            self.item(rowPosition, Col['response']).setText(cmd)
-            return
+                cmdString = cmdstart
+            #print(f'Command in row {rowPosition}:\n{cmdString}')
+            self.item(rowPosition, Col['response']).setText(cmdString)
+        lastCommand = cmd
 
     def set_headersVisibility(self, visible:bool):
         #print(f'set_headersVisibility {visible}')
@@ -260,7 +274,6 @@ class MyTable(QW.QTableWidget):
 
     def tableWideAction(self, cmd:str):
         # Execute table-wide action
-        #print(f'tableWideAction: {cmd}')
         if cmd == 'Edit':
             launch_default_editor(self.configFile)
         elif cmd == 'Delete':
@@ -279,17 +292,8 @@ class MyTable(QW.QTableWidget):
         else:# Delegate command to managers
             for manName in self.startup:
                 cmd = cmd.split()[0]# use first word of the command
-                #print(f'man {manName,cmd}')
-                if manName.startswith('tst') and cmd != 'Check':
-                    continue
                 self.manAction(manName, cmd)
 
-    def deferredCheck(self, args):
-        #print(f'deferred: {args}')
-        manName,rowPosition = args
-        self.manAction(manName, ManCmds.index('Check'))
-        if 'started' not in self.item(rowPosition, Col['_status_']).text():
-            self.item(rowPosition, Col['response']).setText('Failed to start')
 #``````````````````Main Window````````````````````````````````````````````````
 class Window(QW.QMainWindow):# it may sense to subclass it from QW.QMainWindow
     pargs = None

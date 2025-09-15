@@ -2,8 +2,6 @@
 import sys, os, time, glob
 import subprocess
 
-ConfigDir = '/operations/app_store/manman'
-
 Verbose = 0
 
 def printTime(): return time.strftime("%m%d:%H%M%S")

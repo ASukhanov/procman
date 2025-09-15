@@ -27,7 +27,7 @@ Supported keys are:
   - **'process'**: used for checking/stopping the server to identify 
      its process. If cmd properly identifies the 
      server, then this key is not necessary,
-  - **'shell'**: some serverss require shell=True option for subprocess.Popen(),
+  - **'shell'**: some servers require shell=True option for subprocess.Popen(),
   - **'help'**: it will be used as a tooltip,
 
 ## Demo

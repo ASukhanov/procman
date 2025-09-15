@@ -31,8 +31,8 @@ startup = {
   },
 'plot it':{help:
   'Plotting tool for peakSimulator',
-  cmd:		'python3 -m pvplot -aL:localhost;9701:dev1: x,y',
-  process:	'pvplot -aL:localhost;9701:dev1: x,y',
+  cmd:		'python3 -m pvplot -a L:localhost;9701:dev1: x,y',
+  process:	'pvplot -a L:localhost;9701:dev1: x,y',
   },
 'control it':{help:
   'Automatic parameter editing tool of the peakSimulator',
