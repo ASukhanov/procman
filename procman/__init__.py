@@ -1,3 +1,3 @@
-#__all__ = ['manman']
+#__all__ = ['procman']
 from .procman import __version__, Window
 

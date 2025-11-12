@@ -224,7 +224,7 @@ class DetachableTabWidget(QtWidgets.QTabWidget):
             QtWidgets.QMainWindow.__init__(self, None)
 
             self.setObjectName(name)
-            self.setWindowTitle('manman '+name)
+            self.setWindowTitle(name)
 
             self.contentWidget = contentWidget
             self.setCentralWidget(self.contentWidget)

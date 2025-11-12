@@ -1,7 +1,6 @@
 """Tabbed GUI for starting/stopping/monitoring programs.
 """
-__version__ = 'v2.1.0 2025-09-14'# deferred_check removed, poll() after popen
-#TODO: in the detached tab the manName points to first tab of the main window, not detached one.
+__version__ = 'v2.2.0 2025-11-12'# Added: Restart.
 #TODO: xdg_open does not launch if other editors not running. 
 
 import sys, os, time, subprocess, argparse, threading, glob
@@ -14,7 +13,7 @@ from . import helpers as H
 from . import detachable_tabs
 
 #``````````````````Constants``````````````````````````````````````````````````
-ManCmds =       ['Check',    'Start',    'Stop',     'Command']
+ManCmds =       ['Check', 'Start', 'Stop', 'Restart', 'Command']
 AllManCmds = ['Check All','Start All','Stop All', 'Edit', 'Delete',
                 'Condense', 'Uncondense']#, 'Exit All']
 Col = {'Applications':0, '_status_':1, 'response':2}
@@ -96,7 +95,6 @@ class myPushButton(QW.QPushButton):
 
     def buttonClicked(self):
         buttonText = self.text()
-        #print(f'Clicked {buttonText, self.manName, self.buttons}')
         if len(self.buttons) != 0:
             dlg = myDialog(self, self.manName, self.buttons)
             r = dlg.exec()
@@ -107,7 +105,7 @@ class myPushButton(QW.QPushButton):
         if self.manName == 'All':
             current_mytable().tableWideAction(buttonText)
         else:
-            current_mytable().manAction(self.manName, buttonText)
+             current_mytable().manAction(self.manName, buttonText)
 
 class myDialog(QW.QDialog):
     def __init__(self, parent, title, buttons):
@@ -184,6 +182,7 @@ class MyTable(QW.QTableWidget):
 
     def manAction(self, manName:str, cmd:str):
         # Execute action
+        #print(f'manAction {manName,cmd}')
         rowPosition,lastCommand = self.manRow[manName]
         startup = self.startup
         cmdstart = startup[manName]['cmd']
@@ -251,11 +250,19 @@ class MyTable(QW.QTableWidget):
                 return
             self.item(rowPosition, Col['response']).setText('')
             H.printv(f'stopping {manName}')
+            item = self.item(rowPosition, Col['_status_'])
+            item.setText('stopping...')
+            item.setBackground(QtGui.QColor('lightYellow'))
             cmdString = f'pkill -f "{process}"'
             H.printi(f'Executing:\n{cmdString}')
             os.system(cmdString)
             time.sleep(0.1)
             self.manAction(manName, ManCmds.index('Check'))
+
+        elif cmd == 'Restart':
+            self.manAction(manName, 'Stop')
+            time.sleep(1.)
+            self.manAction(manName, 'Start')
 
         elif cmd == 'Command':
             try:

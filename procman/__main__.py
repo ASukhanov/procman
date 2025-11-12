@@ -1,6 +1,6 @@
 """Tabbed GUI for starting/stopping/monitoring programs.
 """
-__version__ = 'v2.0.2 2025-09-08'# added --rowHeight
+__version__ = 'v2.2.0 2025-09-08'#
 
 import sys, os, argparse
 from qtpy.QtWidgets import QApplication
@@ -22,13 +22,13 @@ def main():
       'Height of the rows')
     parser.add_argument('-i', '--interactive', default=False,
       action='store_true', help=
-      'Select files interactively')
+      'Interactively select the tab description files')
     parser.add_argument('-t', '--interval', default=10., help=
       'Interval in seconds of periodic checking. If 0 then no checking')
     parser.add_argument('-v', '--verbose', action='count', default=0, help=
       'Show more log messages (-vv: show even more).')
     parser.add_argument('-z', '--zoomin', help=
-      'Zoom the application window by a factor, factor must be >= 1')
+      'Zoom the application window by a factor, the factor must be >= 1')
     parser.add_argument('files', nargs='*', help=
       ('Path of config files, can include wildcards. '
        'If None, then an interactive dialog will be opened to select files.')),
@@ -51,7 +51,7 @@ def main():
     window = procman.Window()
     window.show()
     app.exec_()
-    print('Application exit')
+    print('Application has exited')
 
 if __name__ == '__main__':
     main()
