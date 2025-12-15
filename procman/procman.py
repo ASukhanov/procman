@@ -1,10 +1,10 @@
 """Tabbed GUI for starting/stopping/monitoring programs.
 """
-__version__ = 'v2.2.0 2025-11-12'# Added: Restart.
+# pylint: disable=invalid-name
+__version__ = 'v2.3.0 2025-12-14'# lintered using vscode/pylint
 #TODO: xdg_open does not launch if other editors not running. 
 
-import sys, os, time, subprocess, argparse, threading, glob
-from functools import partial
+import sys, os, time, subprocess, glob
 from importlib import import_module
 
 from qtpy import QtWidgets as QW, QtGui, QtCore
@@ -19,15 +19,17 @@ AllManCmds = ['Check All','Start All','Stop All', 'Edit', 'Delete',
 Col = {'Applications':0, '_status_':1, 'response':2}
 FilePrefix = 'proc'
 #``````````````````Helpers````````````````````````````````````````````````````
-def select_files_interactively(directory, title=f'Select {FilePrefix}*.py files'):
+def select_files_interactively(directory,
+                               title=f'Select {FilePrefix}*.py files')->list[str]:
+    """Select files interactively using a file dialog."""
     dialog = QW.QFileDialog()
     dialog.setFileMode( QW.QFileDialog.FileMode() )
     ffilter = f'procman ({FilePrefix}*.py)'
     files = dialog.getOpenFileNames( None, title, directory, ffilter)[0]
     return files
 
-def create_folderMap():
-    # create map of {folder1: [file1,...], folder2...} from pargs.files
+def create_foldermap() -> dict[str,list[str]]:
+    """create map of {folder1: [file1,...], folder2...} from pargs.files"""
     folders = {}
     if Window.pargs.configDir is None:
         files = [os.path.abspath(i) for i in Window.pargs.files]
@@ -53,23 +55,26 @@ def create_folderMap():
         folders[folder].append(tail)
 
     # sort the file lists
-    for folder in folders:
+    for folder,_ in folders.items():
         folders[folder].sort()
     return folders
 
-def launch_default_editor(configFile):
-    cmd = f'xdg-open {configFile}'
+def launch_default_editor(configfile):
+    """Launch default editor using xdg-open."""
+    cmd = f'xdg-open {configfile}'
     H.printi(f'Launching editor: {cmd}')
     subprocess.call(cmd.split())
 
 def is_process_running(cmdstart):
+    """Check if a process with cmdstart is running."""
     try:
         subprocess.check_output(["pgrep", '-f', cmdstart])
         return True
     except subprocess.CalledProcessError:
         return False
 
-def setButtonStyleSheet(parent):
+def set_button_style_sheet(parent):
+    """Set style sheet for buttons in parent widget."""
     parent.setStyleSheet("QPushButton{"
             #"background-color: lightBlue;"
             "background-color: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1,"
@@ -84,46 +89,50 @@ def setButtonStyleSheet(parent):
             'QPushButton::pressed{background-color:pink;}'
         )#{+ButtonStyleSheet)    
 
-class myPushButton(QW.QPushButton):
+class MyPushButton(QW.QPushButton):
     """Custom pushbutton""" 
-    def __init__(self, text, manName='?', buttons=[]):
+    def __init__(self, text, manname='?', buttons=None):
+        if buttons is   None:
+            buttons = []
         super().__init__()
         self.setText(text)
         self.buttons = buttons
-        self.manName = manName
-        self.clicked.connect(self.buttonClicked)
+        self.manname = manname
+        self.clicked.connect(self.button_clicked)
 
-    def buttonClicked(self):
-        buttonText = self.text()
+    def button_clicked(self):
+        """Handle button click event."""
+        buttontext = self.text()
         if len(self.buttons) != 0:
-            dlg = myDialog(self, self.manName, self.buttons)
-            r = dlg.exec()
+            my_dialog(self, self.manname, self.buttons)
             return
-        if self.manName == '':
+        if self.manname == '':
             return
-        #print(f'Executing manAction{self.manName, buttonText}')
-        if self.manName == 'All':
-            current_mytable().tableWideAction(buttonText)
+        #print(f'Executing manAction{self.manname, buttonText}')
+        if self.manname == 'All':
+            current_mytable().tableWideAction(buttontext)
         else:
-             current_mytable().manAction(self.manName, buttonText)
+            current_mytable().manAction(self.manname, buttontext)
 
-class myDialog(QW.QDialog):
-    def __init__(self, parent, title, buttons):
-        super().__init__(parent)
-
-        self.setWindowTitle(title)
-        layout = QW.QVBoxLayout(self)
-        for btnTxt in buttons:
-            btn = myPushButton(btnTxt, title)
-            btn.clicked.connect(self.accept)
-            layout.addWidget(btn)
-        self.setLayout(layout)
-        
+def my_dialog(parent, title, buttons):
+    """Create and execute a dialog with buttons."""
+    dlg = QW.QDialog(parent)
+    dlg.setWindowTitle(title)
+    layout = QW.QVBoxLayout(dlg)
+    for btntxt in buttons:
+        btn = MyPushButton(btntxt, title)
+        btn.clicked.connect(dlg.accept)
+        layout.addWidget(btn)
+    dlg.exec()
+ 
 #``````````````````Table Widget```````````````````````````````````````````````
 def current_mytable():
+    """Return the current MyTable instance."""
     return Window.tabWidget.currentWidget()
+
 class MyTable(QW.QTableWidget):
-    def __init__(self, folder, fname, tabName):
+    """Custom table widget for managing processes."""
+    def __init__(self, folder, fname):
         super().__init__()
         mname = fname[:-3]
         H.printv(f'importing {mname}')
@@ -141,16 +150,18 @@ class MyTable(QW.QTableWidget):
         self.manRow = {}
         fontButton = QtGui.QFont('Arial', Window.pargs.rowHeight-10)
         self.setFont(fontButton)
-        setButtonStyleSheet(self)
+        set_button_style_sheet(self)
 
-        try:    title = module.title
-        except: title = 'Applications'
+        try:
+            title = module.title
+        except AttributeError:
+            title = 'Applications'
 
         # Wide button for for tab-wide commands
         rowPosition=0
         self._insertRow(rowPosition)
         self.setSpan(rowPosition,0,1,2)
-        item = myPushButton(title, 'All', AllManCmds)
+        item = MyPushButton(title, 'All', AllManCmds)
         item.setToolTip('Commands for all programs in this page')
         self.setCellWidget(rowPosition, Col['Applications'], item)
 
@@ -159,9 +170,11 @@ class MyTable(QW.QTableWidget):
             rowPosition = self.rowCount()
             self._insertRow(rowPosition)
             self.manRow[manName] = [rowPosition,'']# row, last command
-            button = myPushButton(manName, manName, buttons=ManCmds)
-            try:    button.setToolTip(props['help'])
-            except: pass
+            button = MyPushButton(manName, manName, buttons=ManCmds)
+            try:
+                button.setToolTip(props['help'])
+            except KeyError:
+                pass
             self.setCellWidget(rowPosition, Col['Applications'], button)
             itemStatus = QW.QTableWidgetItem('?')
             self.setItem(rowPosition, Col['_status_'], itemStatus)
@@ -181,9 +194,9 @@ class MyTable(QW.QTableWidget):
         self.setRowHeight(rowPosition, 1)  
 
     def manAction(self, manName:str, cmd:str):
-        # Execute action
+        """Execute action cmd on manager manName."""
         #print(f'manAction {manName,cmd}')
-        rowPosition,lastCommand = self.manRow[manName]
+        rowPosition,_lastCommand = self.manRow[manName]
         startup = self.startup
         cmdstart = startup[manName]['cmd']
         process = startup[manName].get('process', f'{cmdstart}')
@@ -217,7 +230,7 @@ class MyTable(QW.QTableWidget):
                 expandedPath = os.path.expanduser(path)
                 try:
                     os.chdir(expandedPath)
-                except Exception as e:
+                except FileNotFoundError as e:
                     txt = f'ERR: in chdir: {e}'
                     self.item(rowPosition, Col['response']).setText(txt)
                     return
@@ -238,8 +251,7 @@ class MyTable(QW.QTableWidget):
                     txt = f'Failed to execute {cmdstart}'
                     self.item(rowPosition, Col['response']).setText(txt)
                     return
-            except Exception as e:
-                H.printv(f'Exception: {e}') 
+            except FileNotFoundError as e:
                 self.item(rowPosition, Col['response']).setText(str(e))
                 return
 
@@ -268,19 +280,18 @@ class MyTable(QW.QTableWidget):
             try:
                 cd = startup[manName]['cd']
                 cmdString = f'cd {cd}; {cmdstart}'
-            except Exception as e:
+            except KeyError:
                 cmdString = cmdstart
-            #print(f'Command in row {rowPosition}:\n{cmdString}')
             self.item(rowPosition, Col['response']).setText(cmdString)
-        lastCommand = cmd
 
     def set_headersVisibility(self, visible:bool):
+        """Set visibility of table headers."""
         #print(f'set_headersVisibility {visible}')
         self.horizontalHeader().setVisible(visible)
         self.verticalHeader().setVisible(visible)
 
     def tableWideAction(self, cmd:str):
-        # Execute table-wide action
+        """Execute table-wide action"""
         if cmd == 'Edit':
             launch_default_editor(self.configFile)
         elif cmd == 'Delete':
@@ -303,6 +314,7 @@ class MyTable(QW.QTableWidget):
 
 #``````````````````Main Window````````````````````````````````````````````````
 class Window(QW.QMainWindow):# it may sense to subclass it from QW.QMainWindow
+    """Main window class for procman."""
     pargs = None
     tableWidgets = {}
     timer = QtCore.QTimer()
@@ -310,7 +322,7 @@ class Window(QW.QMainWindow):# it may sense to subclass it from QW.QMainWindow
     def __init__(self):
         super().__init__()
         H.Verbose = Window.pargs.verbose
-        folders = create_folderMap()
+        folders = create_foldermap()
         if len(folders) == 0:
             sys.exit(1)
         H.printi(f'Configuration files: {folders}')
@@ -320,14 +332,14 @@ class Window(QW.QMainWindow):# it may sense to subclass it from QW.QMainWindow
         Window.tabWidget = detachable_tabs.DetachableTabWidget()
         Window.tabWidget.currentChanged.connect(periodicCheck)
         self.setCentralWidget(Window.tabWidget)
-        H.printv(f'tabWidget created')
+        H.printv('tabWidget created')
 
         # Add tables, configured from files, to tabs
         for folder,files in folders.items():
             sys.path.append(folder)
             for fname in files:
                 tabName = fname[len(FilePrefix):-3]
-                mytable = MyTable(folder, fname, tabName)
+                mytable = MyTable(folder, fname)
                 Window.tableWidgets[tabName] = mytable
                 #print(f'Adding tab: {fname}')
                 Window.tabWidget.addTab(mytable, tabName)
@@ -346,7 +358,7 @@ class Window(QW.QMainWindow):# it may sense to subclass it from QW.QMainWindow
             Window.timer.start()
 
 def periodicCheck():
-    # execute tableWideAction on current tab
+    """Execute tableWideAction on current tab and detached tabs."""
     current_mytable().tableWideAction('Check')
     # execute tableWideAction on all detached tabs
     for tabName,mytable in Window.tableWidgets.items():
@@ -354,4 +366,3 @@ def periodicCheck():
         #print(f'periodic for {tabName,detached}')
         if detached:
             mytable.tableWideAction('Check')
-
