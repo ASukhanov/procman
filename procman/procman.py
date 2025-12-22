@@ -1,13 +1,13 @@
 """Tabbed GUI for starting/stopping/monitoring programs.
 """
 # pylint: disable=invalid-name
-__version__ = 'v2.3.0 2025-12-14'# lintered using vscode/pylint
+__version__ = 'v2.3.1 2025-12-21'# fixing is_process_running, use PyQt5 instead of qtpy
 #TODO: xdg_open does not launch if other editors not running. 
 
 import sys, os, time, subprocess, glob
 from importlib import import_module
 
-from qtpy import QtWidgets as QW, QtGui, QtCore
+from PyQt5 import QtWidgets as QW, QtGui, QtCore
 
 from . import helpers as H
 from . import detachable_tabs
@@ -67,11 +67,13 @@ def launch_default_editor(configfile):
 
 def is_process_running(cmdstart):
     """Check if a process with cmdstart is running."""
+    r = True
     try:
         subprocess.check_output(["pgrep", '-f', cmdstart])
-        return True
     except subprocess.CalledProcessError:
-        return False
+        r = False
+    H.printvv(f'>is_process_running {cmdstart}: {r}')
+    return r
 
 def set_button_style_sheet(parent):
     """Set style sheet for buttons in parent widget."""
@@ -208,10 +210,10 @@ class MyTable(QW.QTableWidget):
             item = self.item(rowPosition,Col['_status_'])
             prevStatus = item.text()
             if status != prevStatus:
-                if prevStatus[:4] in ['stop','star','?']:
-                    color = 'lightGreen' if 'started' in status else 'pink'
-                    item.setBackground(QtGui.QColor(color))
-                    item.setText(status)
+                color = 'lightGreen' if 'started' in status else 'pink'
+                item.setBackground(QtGui.QColor(color))
+                item.setText(status)
+                self.item(rowPosition,Col['response']).setText('')# clear response field
 
         elif cmd == 'Start':
             self.item(rowPosition, Col['response']).setText('')
