@@ -1,7 +1,7 @@
 """Tabbed GUI for starting/stopping/monitoring programs.
 """
 # pylint: disable=invalid-name
-__version__ = 'v2.3.1 2025-12-21'# fixing is_process_running, use PyQt5 instead of qtpy
+__version__ = 'v2.3.2 2026-01-21'# increase delay to 0.5s for process.poll 
 #TODO: xdg_open does not launch if other editors not running. 
 
 import sys, os, time, subprocess, glob
@@ -246,9 +246,9 @@ class MyTable(QW.QTableWidget):
             try:
                 process = subprocess.Popen(cmdlist, shell=shell, #close_fds=True,# env=my_env,
                   stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-                time.sleep(0.1)
+                time.sleep(.5)
                 if process.poll() is not None:
-                    #print('process did not start in 0.1s')
+                    #print('process did not start in 0.5s')
                     item.setText('failed')
                     txt = f'Failed to execute {cmdstart}'
                     self.item(rowPosition, Col['response']).setText(txt)

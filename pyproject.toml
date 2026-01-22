@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "procman"
-version = "2.3.0"
+version = "2.3.1"
 authors = [
   { name="Andrei Sukhanov", email="cyxandr@gmail.com" },
 ]
@@ -18,7 +18,7 @@ classifiers = [
     "Operating System :: OS Independent",
 ]
 dependencies = [
-    "qtpy",
+    "PyQt5",
 ]
 
 [project.urls]
