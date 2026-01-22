@@ -6,9 +6,8 @@ build-backend = "hatchling.build"
 name = "procman"
 version = "2.3.1"
 authors = [
-  { name="Andrei Sukhanov", email="cyxandr@gmail.com" },
+  { name="Andrey Sukhanov", email="cyxandr@gmail.com" },
 ]
-
 description = "Tabbed GUI to start/stop/monitor programs"
 readme = "README.md"
 requires-python = ">=3.9"
@@ -20,6 +19,5 @@ classifiers = [
 dependencies = [
     "PyQt5",
 ]
-
 [project.urls]
 "Homepage" = "https://github.com/ASukhanov/procman"
