@@ -1,10 +1,15 @@
 """Tabbed GUI for starting/stopping/monitoring programs.
 """
 # pylint: disable=invalid-name
-__version__ = 'v2.3.2 2026-01-21'# increase delay to 0.5s for process.poll 
-#TODO: xdg_open does not launch if other editors not running. 
+__version__ = 'v2.3.2 2026-02-21'# Keep checking when status=failed.
+#TODO: xdg_open does not launch if other editors not running.
 
-import sys, os, time, subprocess, glob
+import os
+import sys
+import time
+import subprocess
+import glob
+
 from importlib import import_module
 
 from PyQt5 import QtWidgets as QW, QtGui, QtCore
@@ -209,7 +214,7 @@ class MyTable(QW.QTableWidget):
             status = ['stopped','started'][is_process_running(process)]
             item = self.item(rowPosition,Col['_status_'])
             prevStatus = item.text()
-            if status != prevStatus:
+            if status != prevStatus or prevStatus == 'failed':
                 color = 'lightGreen' if 'started' in status else 'pink'
                 item.setBackground(QtGui.QColor(color))
                 item.setText(status)
