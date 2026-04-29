@@ -1,7 +1,7 @@
 """Tabbed GUI for starting/stopping/monitoring programs.
 """
 # pylint: disable=invalid-name
-__version__ = 'v2.3.2 2026-02-21'# Keep checking when status=failed.
+__version__ = 'v2.3.3 2026-04-28'# Error message if no config files found.
 #TODO: xdg_open does not launch if other editors not running.
 
 import os
@@ -331,6 +331,7 @@ class Window(QW.QMainWindow):# it may sense to subclass it from QW.QMainWindow
         H.Verbose = Window.pargs.verbose
         folders = create_foldermap()
         if len(folders) == 0:
+            H.printe(f'No config files proc*.py found in {Window.pargs.configDir}.')
             sys.exit(1)
         H.printi(f'Configuration files: {folders}')
         self.setWindowTitle('procman')
